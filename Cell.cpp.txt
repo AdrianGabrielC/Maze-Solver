@@ -1,0 +1,61 @@
+#include "Cell.h"
+#include <iostream>
+using namespace std;
+
+Cell::Cell(int x, int y, int i, int j, int width) {
+    topLeftCornerX = x;
+    topLeftCornerY = y;
+    this->i = i;
+    this->j = j;
+    visited = explored = arrow = false;
+    topBorder = botBorder = leftBorder = rightBorder = true;
+    if (cellWidth == 0) setCellWidth(width);
+    rectangle = new SDL_Rect();
+    rectangle->x = topLeftCornerX;
+    rectangle->y = topLeftCornerY;
+    rectangle->w = width;
+    rectangle->h = width;
+}
+// Util methods.          
+void Cell::setArrow(bool val) { arrow = val; }
+void Cell::setCellWidth(int w) { cellWidth = w; }  // Getters and setters for the cell width
+int Cell::getCellWidth() { return cellWidth; }     // _________________________________________
+void Cell::setVisited(bool val) { visited = val; }        // Getters and setters for Visited (true for visited and false for not visited)
+bool Cell::getVisited() { return visited; }               // ___________________________________________
+int Cell::getRow() { return i; }                          // Getters for row and column of the current cell
+int Cell::getCol() { return j; }                          // ______________________________________________
+void Cell::setLeftBorder(bool val) { leftBorder = val; }  // 
+void Cell::setRightBorder(bool val) { rightBorder = val; }// Setters for borders
+void Cell::setTopBorder(bool val) { topBorder = val; }    //
+void Cell::setBotBorder(bool val) { botBorder = val; }    //_________________________________________________
+bool Cell::getLeftBorder() { return leftBorder; }
+bool Cell::getRightBorder() { return rightBorder; }
+bool Cell::getTopBorder() { return topBorder; }
+bool Cell::getBotBorder() { return botBorder; }
+void Cell::setExplored(bool val) { explored = val; }
+void Cell::setExit(Cell* cell) { exit = cell; }
+// Main methods.
+void Cell::drawBorders(SDL_Renderer* renderer) {
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    if (topBorder == true) SDL_RenderDrawLine(renderer, topLeftCornerX, topLeftCornerY, topLeftCornerX + cellWidth, topLeftCornerY);
+    if (botBorder == true) SDL_RenderDrawLine(renderer, topLeftCornerX, topLeftCornerY + cellWidth, topLeftCornerX + cellWidth, topLeftCornerY + cellWidth);
+    if (leftBorder == true) SDL_RenderDrawLine(renderer, topLeftCornerX, topLeftCornerY, topLeftCornerX, topLeftCornerY + cellWidth);
+    if (rightBorder == true) SDL_RenderDrawLine(renderer, topLeftCornerX + cellWidth, topLeftCornerY, topLeftCornerX + cellWidth, topLeftCornerY + cellWidth);
+}
+void Cell::drawRect(SDL_Renderer* renderer) { // With this method we color the cells that are either start or end or explored or solution.   
+    if (explored) {
+        SDL_SetRenderDrawColor(renderer, 205, 201, 201, 255);
+        SDL_RenderFillRect(renderer, rectangle);
+    }
+    if (arrow) {
+        SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);
+        SDL_RenderFillRect(renderer, rectangle);
+    }
+    if (this == Maze::getExit()) {
+        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+        SDL_RenderFillRect(renderer, rectangle);
+    }
+}
+
+int Cell::cellWidth = 0;
+Cell* Cell::exit = NULL;

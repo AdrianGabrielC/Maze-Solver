@@ -1,0 +1,239 @@
+#include "Maze.h"
+#include <vector>
+#include <time.h>
+#include <iostream>
+using namespace std;
+
+Maze::Maze(int width, int cellsPerR) {
+    // Initialize variables
+    solve = false;
+    quit = false;
+    windowWidth = width;
+    cellsPerRow = cellsPerR;
+    numberOfCells = cellsPerRow * cellsPerRow;
+    cellWidth = windowWidth / cellsPerRow;
+    createCells();
+    createMaze();
+    srand(time(0));
+    setExit(getRandomExit());
+}
+Cell* Maze::exit = NULL;
+// UTIL METHODS
+Cell* Maze::getExit() { return exit; }
+Cell* Maze::getRandomExit() {
+    Cell* temp = NULL;
+    int random = rand() % 4; // for random==0 we pick the first row; for random==1 we pick the last row; for random==2 we pick the first column; for random==3 we pick the last column
+    int index = rand() % cellsPerRow;
+    switch (random) {
+    case 0:
+        temp = getCell(0, random);
+        break;
+    case 1:
+        temp = getCell(cellsPerRow - 1, random);
+        break;
+    case 2:
+        temp = getCell(random, 0);
+        break;
+    case 3:
+        temp = getCell(random, cellsPerRow - 1);
+        break;
+    }
+    return temp;
+}
+void Maze::setExit(Cell* cell) { exit = cell;  }
+
+int Maze::getNumberOfCells() {
+    return numberOfCells;
+}
+Cell* Maze::getCell(int i, int j) { // Returns a cell based on the row and column
+    if (i >= 0 && i < (this->cellsPerRow) && j >= 0 && j < (this->cellsPerRow)) // If the row and column are valid we return the cell
+        return this->cells[i * this->cellsPerRow + j];
+    else return NULL; // If row and column are not valid we return None
+}
+int* Maze::getIJ(int x, int y) { // Returns the row and column based on x,y coordinates of the top-left corner.
+    int* temp = new int[2];
+    temp[0] = y / this->cellWidth;
+    temp[1] = x / this->cellWidth;
+    return temp;
+}
+int* Maze::getTopLeftCorner(int i, int j) { // Returns the x,y coordinates of the top-left corner based on the row and column
+    int* temp = new int[2];
+    temp[0] = j * this->cellWidth;
+    temp[1] = i * this->cellWidth;
+    return temp;
+}
+int Maze::getPosition(int i, int j) { // Returns the position in the array based on the row and column.
+    return i * cellsPerRow + j;
+}
+void Maze::createCells() {
+    cells = new Cell * [numberOfCells];
+    for (int i = 0; i < cellsPerRow; i++) {
+        for (int j = 0; j < cellsPerRow; j++) {
+            int* temp = getTopLeftCorner(i, j);
+            cells[getPosition(i, j)] = new Cell(temp[0], temp[1], i, j, cellWidth);
+            delete[] temp;
+        }
+    }
+}
+void Maze::resetVisited() {
+    for (int i = 0; i < numberOfCells; i++) {
+        cells[i]->setVisited(false);
+    }
+}
+Cell* Maze::getStart() { return start; }
+void Maze::setStart(Cell* cell) { start = cell; }
+// MAIN METHODS
+///////////////////////// MAZE CREATION  ///////////////////////////////////
+void Maze::createMaze() {
+    SDL_Init(SDL_INIT_VIDEO);
+    // Create the window.
+    window = SDL_CreateWindow("Maze solver", 500, 500, 800, 800, 0);
+    // Create the renderer.
+    renderer = SDL_CreateRenderer(this->window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    // Flag for breaking the gameloop.
+    quit = false;
+    vector<Cell*> stack;
+    srand(time(0));
+    //int random = rand() % numberOfCells;
+    int random = 0; ///////////////////////////////////// MODIFY HERE!!!!!!!!!!!!!!!!!!!!!
+    stack.push_back(cells[random]);
+    cells[random]->setVisited(true);
+    Cell* currentCell = stack.back();
+    Cell* previousCell = NULL;
+    while (stack.size() != 0) {
+        vector<Cell*> neighbors = getNeighbors(currentCell);
+        if (neighbors.size() != 0) {
+            stack.push_back(neighbors[rand() % neighbors.size()]);
+            previousCell = currentCell;
+            currentCell = stack.back();
+            stack.back()->setVisited(true);
+            removeBorder(previousCell, currentCell);
+            generateOutput();
+        }
+        else {
+            stack.pop_back();
+            if (stack.size() != 0) currentCell = stack.back();
+        }
+    }
+    resetVisited();
+}
+void Maze::removeBorder(Cell* currentCell, Cell* selectedNeighbor) {
+    int currI = currentCell->getRow();
+    int currJ = currentCell->getCol();
+    int neighI = selectedNeighbor->getRow();
+    int neighJ = selectedNeighbor->getCol();
+    if (currI == neighI) { // If both cells are on the same row it means that there is a left-right relationship
+        if (currJ == neighJ - 1) { // We picked the right neighbor
+            currentCell->setRightBorder(false);
+            selectedNeighbor->setLeftBorder(false);
+        }
+        else { // We picked the left neighbor 
+            currentCell->setLeftBorder(false);
+            selectedNeighbor->setRightBorder(false);
+        }
+    }
+    else if (currJ == neighJ) { // If both cells are on the same column it means that there is a top-bottom relationship
+        if (currI == neighI - 1) { // We picked the bottom neighbor
+            currentCell->setBotBorder(false);
+            selectedNeighbor->setTopBorder(false);
+        }
+        else { // We picked the top neighbor
+            currentCell->setTopBorder(false);
+            selectedNeighbor->setBotBorder(false);
+        }
+    }
+}
+vector<Cell*> Maze::getNeighbors(Cell* currentCell) {
+    vector<Cell*> neighbors;
+    if (getCell(currentCell->getRow(), currentCell->getCol() - 1) != NULL && getCell(currentCell->getRow(), currentCell->getCol() - 1)->getVisited() == false)
+        neighbors.push_back(getCell(currentCell->getRow(), currentCell->getCol() - 1));
+    if (getCell(currentCell->getRow(), currentCell->getCol() + 1) != NULL && getCell(currentCell->getRow(), currentCell->getCol() + 1)->getVisited() == false)
+        neighbors.push_back(getCell(currentCell->getRow(), currentCell->getCol() + 1));
+    if (getCell(currentCell->getRow() - 1, currentCell->getCol()) != NULL && getCell(currentCell->getRow() - 1, currentCell->getCol())->getVisited() == false)
+        neighbors.push_back(getCell(currentCell->getRow() - 1, currentCell->getCol()));
+    if (getCell(currentCell->getRow() + 1, currentCell->getCol()) != NULL && getCell(currentCell->getRow() + 1, currentCell->getCol())->getVisited() == false)
+        neighbors.push_back(getCell(currentCell->getRow() + 1, currentCell->getCol()));
+    return neighbors;
+}
+vector<Cell*> Maze::getNeighborsWithWalls(Cell* currentCell) {
+    vector<Cell*> neighbors;
+    Cell* left = getCell(currentCell->getRow(), currentCell->getCol() - 1);
+    Cell* right = getCell(currentCell->getRow(), currentCell->getCol() + 1);
+    Cell* top = getCell(currentCell->getRow() - 1, currentCell->getCol());
+    Cell* bot = getCell(currentCell->getRow() + 1, currentCell->getCol());
+    if (left != NULL && left->getVisited() == false && currentCell->getLeftBorder() == false)
+        neighbors.push_back(left);
+    if (right != NULL && right->getVisited() == false && currentCell->getRightBorder() == false)
+        neighbors.push_back(right);
+    if (top != NULL && top->getVisited() == false && currentCell->getTopBorder() == false)
+        neighbors.push_back(top);
+    if (bot != NULL && bot->getVisited() == false && currentCell->getBotBorder() == false)
+        neighbors.push_back(bot);
+    return neighbors;
+}
+////////////////////////////////////////////////////////
+
+///////////////////////// SOLVE MAZE ///////////////////
+bool Maze::solveMaze(Cell* currentCell) {
+    currentCell->setVisited(true);
+    currentCell->setExplored(true);
+    currentCell->setArrow(true);
+    generateOutput();
+    currentCell->setArrow(false);
+    vector<Cell*> neighbors = getNeighborsWithWalls(currentCell);
+    if (currentCell == exit) return true;
+    if (neighbors.size() == 0) return false; 
+    for (int i = 0; i < neighbors.size(); i++)
+        if (solveMaze(neighbors[i])) return true;
+    currentCell->setArrow(true);
+    generateOutput();
+    currentCell->setArrow(false);
+    return false;
+}
+
+
+void Maze::processInput() {
+    SDL_Event* event = new SDL_Event;
+    while (SDL_PollEvent(event)) {
+        switch (event->type) {
+        case SDL_QUIT:
+            quit = true;
+            break;
+        case SDL_MOUSEBUTTONDOWN:
+            if (event->button.button == SDL_BUTTON_LEFT) {
+                int* ij = getIJ(event->motion.x, event->motion.y);
+                start = getCell(ij[0], ij[1]);
+            }
+            break;
+        }
+    }
+}
+void Maze::draw() {
+    for (int i = 0; i < getNumberOfCells(); i++) {
+        cells[i]->drawRect(renderer);
+        cells[i]->drawBorders(renderer);
+    }
+}
+void Maze::updateGame() {}
+void Maze::generateOutput() {
+    SDL_SetRenderDrawColor(renderer, 139, 137, 137, 255);
+    SDL_RenderClear(renderer);
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    draw();
+    SDL_RenderPresent(renderer);
+}
+void Maze::gameLoop() {
+    int contor = 0;
+    while (quit == false) {
+        if (contor == 0) {
+            contor = 1;
+            solveMaze(cells[0]);
+        }
+        processInput();
+        updateGame();
+        generateOutput();
+    }
+}
+//int* Maze::getMouseXY(SDL_Event e) {
+//
+//}

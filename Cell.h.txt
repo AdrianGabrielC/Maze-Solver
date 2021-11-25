@@ -1,0 +1,33 @@
+#pragma once
+#include <SDL.h>
+#include "Maze.h"
+class Cell {
+private:
+    static int cellWidth;
+    static Cell* exit;
+    int topLeftCornerX, topLeftCornerY, i, j;
+    bool visited, topBorder, botBorder, leftBorder, rightBorder, explored, arrow;
+    SDL_Rect* rectangle;
+public:
+    Cell(int x, int y, int i, int j, int width);
+    // Util methods.                                      
+    static void setCellWidth(int w);
+    static int getCellWidth(); 
+    void setVisited(bool val);                         
+    bool getVisited();                                     
+    int getRow();                                       
+    int getCol();                                            
+    void setLeftBorder(bool val);  
+    void setRightBorder(bool val);
+    void setTopBorder(bool val); 
+    void setBotBorder(bool val);
+    bool getLeftBorder();
+    bool getRightBorder();
+    bool getTopBorder();
+    bool getBotBorder();
+    void setExplored(bool val);
+    void setArrow(bool val);
+    void drawBorders(SDL_Renderer* renderer);
+    void drawRect(SDL_Renderer* renderer);
+    static void setExit(Cell* cell);
+};

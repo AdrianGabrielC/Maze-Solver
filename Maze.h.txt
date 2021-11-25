@@ -1,0 +1,47 @@
+#pragma once
+#include "Cell.h"
+#include <vector>
+using namespace std;
+
+class Maze {
+    friend class Cell;
+    friend class Game;
+private:
+    SDL_Window* window;
+    SDL_Renderer* renderer;
+    Cell* start;
+    static Cell* exit;
+    int windowWidth, cellsPerRow, numberOfCells, cellWidth;
+    Cell** cells;
+    bool quit;
+    bool solve;
+public:
+    // Constructor
+    Maze(int width, int cellsPerR);
+    // Utils
+    Cell* getRandomExit();
+    static void setExit(Cell* cell);
+    static Cell* getExit();
+    int getNumberOfCells();
+    Cell* getCell(int i, int j);
+    int* getIJ(int x, int y);
+    int* getTopLeftCorner(int i, int j);
+    int getPosition(int i, int j);
+    void createCells();
+    Cell* getStart();
+    void setStart(Cell* cell);
+    void createMaze();
+    void removeBorder(Cell* currentCell, Cell* selectedNeighbor);
+    vector<Cell*> getNeighbors(Cell* currentCell);
+    vector<Cell*> getNeighborsWithWalls(Cell* currentCell);
+    bool solveMaze(Cell* CurrentCell);
+    void resetVisited();
+    void draw();
+    void processInput();
+    void updateGame();
+    void generateOutput();
+    void gameLoop();
+    int* getMouseXY(SDL_Event e);
+};
+
+
